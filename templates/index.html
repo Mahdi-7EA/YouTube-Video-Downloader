@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Video Downloader</title>
+    <!-- Bootstrap CSS for styling -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f8f9fa; }
+        .container { max-width: 600px; margin-top: 100px; }
+        .card { padding: 30px; border-radius: 15px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="card text-center">
+        <h2 class="mb-4 text-danger"><b>YouTube Downloader</b></h2>
+        <p class="text-muted">আপনার ইউটিউব ভিডিওর লিঙ্ক নিচে দিন (Max 1080p)</p>
+        
+        <div class="mb-3">
+            <input type="url" id="videoUrl" class="form-control form-control-lg" placeholder="https://www.youtube.com/watch?v=..." required>
+        </div>
+        
+        <button id="downloadBtn" class="btn btn-danger btn-lg w-100" onclick="startDownload()">
+            <span id="btnText">Download Video</span>
+            <div id="loadingSpinner" class="spinner-border spinner-border-sm text-light d-none" role="status"></div>
+        </button>
+
+        <div id="statusMessage" class="mt-4 alert d-none" role="alert"></div>
+    </div>
+</div>
+
+<script>
+    async function startDownload() {
+        const urlInput = document.getElementById('videoUrl').value;
+        const statusMessage = document.getElementById('statusMessage');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const btnText = document.getElementById('btnText');
+        const spinner = document.getElementById('loadingSpinner');
+
+        if (!urlInput) {
+            showMessage('দয়া করে একটি লিঙ্ক দিন!', 'alert-warning');
+            return;
+        }
+
+        // UI Loading State Update
+        downloadBtn.disabled = true;
+        btnText.innerText = 'Downloading... Please wait ';
+        spinner.classList.remove('d-none');
+        statusMessage.classList.add('d-none');
+
+        try {
+            // Send request to Python Backend
+            const response = await fetch('/api/download', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url: urlInput })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                showMessage(result.message, 'alert-success');
+                document.getElementById('videoUrl').value = ''; // Clear input
+            } else {
+                showMessage(result.message, 'alert-danger');
+            }
+        } catch (error) {
+            showMessage('ডাউনলোড করতে সমস্যা হয়েছে। নেটওয়ার্ক চেক করুন।', 'alert-danger');
+        } finally {
+            // Restore UI State
+            downloadBtn.disabled = false;
+            btnText.innerText = 'Download Video';
+            spinner.classList.add('d-none');
+        }
+    }
+
+    function showMessage(msg, className) {
+        const statusMessage = document.getElementById('statusMessage');
+        statusMessage.innerText = msg;
+        statusMessage.className = `mt-4 alert ${className}`;
+        statusMessage.classList.remove('d-none');
+    }
+</script>
+
+</body>
+</html>
